@@ -110,7 +110,7 @@ body {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  display : flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -222,6 +222,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 15px;
+  margin-bottom: 20px;
 }
 
 .stat {
@@ -260,6 +261,32 @@ body {
 .stat strong {
   color: white;
   font-size: 24px;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  margin-top: 20px;
+}
+
+.progress-bar {
+  height: 12px;
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #3b82f6);
+  border-radius: 20px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.progress-text {
+  color: #93c5fd;
+  font-size: 13px;
 }
 
 /* Main Grid */
@@ -332,6 +359,7 @@ body {
 
 .th-product {
   background: rgba(51, 65, 85, 0.5);
+  width: 200px;
 }
 
 .th-q1 {
@@ -365,11 +393,47 @@ body {
   color: #93c5fd;
 }
 
+/* Product Header with Progress */
+.product-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.product-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-progress {
+  flex: 1;
+  height: 6px;
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #3b82f6);
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+
+.progress-percent {
+  font-size: 11px;
+  color: #10b981;
+  font-weight: 600;
+  min-width: 35px;
+}
+
 /* Tasks */
 .task-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 50px;
 }
 
 .task {
@@ -382,6 +446,68 @@ body {
   align-items: center;
   color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+}
+
+.task:hover {
+  transform: translateX(2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.task.completed {
+  opacity: 0.7;
+  background: rgba(16, 185, 129, 0.3) !important;
+}
+
+.task-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.checkbox-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: white;
+  transition: transform 0.2s;
+}
+
+.checkbox-btn:hover {
+  transform: scale(1.2);
+}
+
+.checkbox-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.check-icon {
+  color: #10b981;
+}
+
+.circle-icon {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.completed-text {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.task-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.task:hover .task-actions {
+  opacity: 1;
 }
 
 .task-q1 {
@@ -400,31 +526,49 @@ body {
   background: #ec4899;
 }
 
-.btn-delete-task {
-  background: none;
+/* Button Icons */
+.btn-icon-small {
   border: none;
-  color: white;
-  cursor: pointer;
   padding: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-.task:hover .btn-delete-task {
-  opacity: 1;
+.btn-icon-small.blue {
+  background: rgba(59, 130, 246, 0.3);
+  color: white;
 }
 
-.btn-delete-task:hover {
-  color: #fca5a5;
+.btn-icon-small.blue:hover {
+  background: rgba(59, 130, 246, 0.5);
 }
 
-/* Add Task Form */
-.add-task-form {
+.btn-icon-small.red {
+  background: rgba(239, 68, 68, 0.3);
+  color: white;
+}
+
+.btn-icon-small.red:hover {
+  background: rgba(239, 68, 68, 0.5);
+}
+
+/* Add/Edit Task Forms */
+.add-task-form,
+.edit-task-form {
   display: flex;
   gap: 5px;
+  padding: 8px;
+  background: rgba(51, 65, 85, 0.3);
+  border-radius: 6px;
+  border: 2px dashed rgba(148, 163, 184, 0.3);
 }
 
-.add-task-form input {
+.add-task-form input,
+.edit-task-form input {
   flex: 1;
   padding: 8px;
   background: rgba(51, 65, 85, 0.5);
@@ -434,7 +578,8 @@ body {
   font-size: 13px;
 }
 
-.add-task-form input:focus {
+.add-task-form input:focus,
+.edit-task-form input:focus {
   outline: none;
   border-color: #3b82f6;
 }
@@ -454,9 +599,17 @@ body {
   color: white;
 }
 
+.btn-icon.green:hover {
+  background: #059669;
+}
+
 .btn-icon.red {
   background: #ef4444;
   color: white;
+}
+
+.btn-icon.red:hover {
+  background: #dc2626;
 }
 
 .btn-add {
@@ -478,6 +631,7 @@ body {
 .btn-add:hover {
   border-color: #94a3b8;
   color: white;
+  background: rgba(148, 163, 184, 0.1);
 }
 
 /* Sidebar */
@@ -496,11 +650,31 @@ body {
   overflow-y: auto;
 }
 
+.activity-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activity-list::-webkit-scrollbar-track {
+  background: rgba(51, 65, 85, 0.3);
+  border-radius: 10px;
+}
+
+.activity-list::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
+  border-radius: 10px;
+}
+
 .activity-item {
   background: rgba(51, 65, 85, 0.5);
   padding: 12px;
   border-radius: 8px;
   border: 1px solid rgba(71, 85, 105, 0.5);
+  transition: all 0.2s;
+}
+
+.activity-item:hover {
+  background: rgba(51, 65, 85, 0.7);
+  border-color: rgba(59, 130, 246, 0.5);
 }
 
 .activity-header {
@@ -544,6 +718,11 @@ body {
   padding: 10px;
   background: rgba(51, 65, 85, 0.5);
   border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.team-member:hover {
+  background: rgba(51, 65, 85, 0.7);
 }
 
 .avatar {
@@ -612,4 +791,28 @@ body {
     font-size: 12px;
     padding: 8px;
   }
+  
+  .product-header {
+    font-size: 12px;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.task {
+  animation: fadeIn 0.3s ease;
+}
+
+.activity-item {
+  animation: fadeIn 0.3s ease;
 }

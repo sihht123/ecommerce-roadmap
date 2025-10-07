@@ -12,12 +12,12 @@ import {
 } from 'firebase/firestore';
 import { 
   Lock, Unlock, Users, Eye, Edit2, Plus, 
-  Trash2, Save, X, CheckCircle, LogOut 
+  Trash2, Save, X, CheckCircle, LogOut, Circle,
+  Edit, CheckCheck
 } from 'lucide-react';
 import './App.css';
 
 function App() {
-  // State management
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [email, setEmail] = useState('');
@@ -25,11 +25,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [showAddTask, setShowAddTask] = useState({ product: null, quarter: null });
+  const [editingTask, setEditingTask] = useState({ product: null, quarter: null, index: null });
   const [newTaskText, setNewTaskText] = useState('');
+  const [editTaskText, setEditTaskText] = useState('');
   const [roadmapData, setRoadmapData] = useState(null);
   const [activityLog, setActivityLog] = useState([]);
 
-  // User roles - Add your team member emails here!
   const userRoles = {
     'teacher@school.com': 'teacher',
     'adib@school.com': 'team',
@@ -37,41 +38,74 @@ function App() {
     'student2@school.com': 'team'
   };
 
-  // Initial roadmap data
   const initialRoadmapData = {
     'Web Application': {
-      Q1: ['Research & Design', 'Azure Architecture', 'UI/UX Design'],
-      Q2: ['Frontend Development', 'Backend API', 'Database Setup'],
-      Q3: ['Payment Integration', 'Security Implementation'],
-      Q4: ['Performance Optimization', 'Load Testing']
+      Q1: [
+        { text: 'Research & Design', completed: true },
+        { text: 'Azure Architecture', completed: true },
+        { text: 'UI/UX Design', completed: false }
+      ],
+      Q2: [
+        { text: 'Frontend Development', completed: false },
+        { text: 'Backend API', completed: false },
+        { text: 'Database Setup', completed: false }
+      ],
+      Q3: [
+        { text: 'Payment Integration', completed: false },
+        { text: 'Security Implementation', completed: false }
+      ],
+      Q4: [
+        { text: 'Performance Optimization', completed: false },
+        { text: 'Load Testing', completed: false }
+      ]
     },
     'Mobile App': {
-      Q1: ['Market Research'],
-      Q2: ['iOS Development MVP', 'Android Development MVP'],
-      Q3: ['Feature Parity', 'Push Notifications'],
-      Q4: ['App Store Release']
+      Q1: [{ text: 'Market Research', completed: true }],
+      Q2: [
+        { text: 'iOS Development MVP', completed: false },
+        { text: 'Android Development MVP', completed: false }
+      ],
+      Q3: [
+        { text: 'Feature Parity', completed: false },
+        { text: 'Push Notifications', completed: false }
+      ],
+      Q4: [{ text: 'App Store Release', completed: false }]
     },
     'Admin Dashboard': {
-      Q1: ['Prototype'],
-      Q2: ['User Management', 'Product Management'],
-      Q3: ['Analytics Dashboard', 'Reporting System'],
-      Q4: ['Advanced Analytics']
+      Q1: [{ text: 'Prototype', completed: true }],
+      Q2: [
+        { text: 'User Management', completed: false },
+        { text: 'Product Management', completed: false }
+      ],
+      Q3: [
+        { text: 'Analytics Dashboard', completed: false },
+        { text: 'Reporting System', completed: false }
+      ],
+      Q4: [{ text: 'Advanced Analytics', completed: false }]
     },
     'Order Management': {
       Q1: [],
-      Q2: ['Core System Design'],
-      Q3: ['Workflow Automation', 'Inventory Integration'],
-      Q4: ['AI-Powered Forecasting']
+      Q2: [{ text: 'Core System Design', completed: false }],
+      Q3: [
+        { text: 'Workflow Automation', completed: false },
+        { text: 'Inventory Integration', completed: false }
+      ],
+      Q4: [{ text: 'AI-Powered Forecasting', completed: false }]
     },
     'Payment System': {
       Q1: [],
       Q2: [],
-      Q3: ['Payment Gateway', 'Multi-Currency'],
-      Q4: ['Fraud Detection', 'Recurring Billing']
+      Q3: [
+        { text: 'Payment Gateway', completed: false },
+        { text: 'Multi-Currency', completed: false }
+      ],
+      Q4: [
+        { text: 'Fraud Detection', completed: false },
+        { text: 'Recurring Billing', completed: false }
+      ]
     }
   };
 
-  // Check if user is logged in
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -84,9 +118,8 @@ function App() {
       setLoading(false);
     });
     return () => unsubscribe();
- }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load roadmap from Firebase
   const loadRoadmapData = async () => {
     try {
       const docRef = doc(db, 'roadmaps', 'main');
@@ -108,7 +141,6 @@ function App() {
     }
   };
 
-  // Save roadmap to Firebase
   const saveRoadmapData = async (newData, newActivity) => {
     try {
       await setDoc(doc(db, 'roadmaps', 'main'), {
@@ -117,11 +149,9 @@ function App() {
       });
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to save. Please try again.');
     }
   };
 
-  // Add activity log
   const addActivityLog = (action, detail) => {
     const newLog = {
       user: user.email.split('@')[0],
@@ -134,7 +164,6 @@ function App() {
     saveRoadmapData(roadmapData, updatedLog);
   };
 
-  // Login handler
   const handleLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -143,34 +172,32 @@ function App() {
     }
   };
 
-  // Logout handler
   const handleLogout = async () => {
     await signOut(auth);
     setEditMode(false);
   };
 
-  // Add task
   const addTask = (product, quarter) => {
     if (!newTaskText.trim()) return;
     
+    const newTask = { text: newTaskText.trim(), completed: false };
     const updatedData = {
       ...roadmapData,
       [product]: {
         ...roadmapData[product],
-        [quarter]: [...roadmapData[product][quarter], newTaskText.trim()]
+        [quarter]: [...roadmapData[product][quarter], newTask]
       }
     };
     
     setRoadmapData(updatedData);
-    addActivityLog('Added task', `${newTaskText} to ${product} ${quarter}`);
+    addActivityLog('Added task', `"${newTaskText}" to ${product} ${quarter}`);
     setNewTaskText('');
     setShowAddTask({ product: null, quarter: null });
     saveRoadmapData(updatedData, activityLog);
   };
 
-  // Delete task
   const deleteTask = (product, quarter, taskIndex) => {
-    const taskName = roadmapData[product][quarter][taskIndex];
+    const taskName = roadmapData[product][quarter][taskIndex].text;
     const updatedData = {
       ...roadmapData,
       [product]: {
@@ -180,11 +207,97 @@ function App() {
     };
     
     setRoadmapData(updatedData);
-    addActivityLog('Deleted task', `${taskName}`);
+    addActivityLog('Deleted task', `"${taskName}" from ${product} ${quarter}`);
     saveRoadmapData(updatedData, activityLog);
   };
 
-  // Get quarter color
+  const toggleTaskComplete = (product, quarter, taskIndex) => {
+    const task = roadmapData[product][quarter][taskIndex];
+    const updatedTask = { ...task, completed: !task.completed };
+    
+    const updatedQuarter = [...roadmapData[product][quarter]];
+    updatedQuarter[taskIndex] = updatedTask;
+    
+    const updatedData = {
+      ...roadmapData,
+      [product]: {
+        ...roadmapData[product],
+        [quarter]: updatedQuarter
+      }
+    };
+    
+    setRoadmapData(updatedData);
+    addActivityLog(
+      updatedTask.completed ? 'Completed task' : 'Reopened task',
+      `"${task.text}" in ${product} ${quarter}`
+    );
+    saveRoadmapData(updatedData, activityLog);
+  };
+
+  const startEditTask = (product, quarter, index) => {
+    setEditingTask({ product, quarter, index });
+    setEditTaskText(roadmapData[product][quarter][index].text);
+  };
+
+  const saveEditTask = (product, quarter, taskIndex) => {
+    if (!editTaskText.trim()) return;
+    
+    const oldText = roadmapData[product][quarter][taskIndex].text;
+    const updatedTask = { ...roadmapData[product][quarter][taskIndex], text: editTaskText.trim() };
+    
+    const updatedQuarter = [...roadmapData[product][quarter]];
+    updatedQuarter[taskIndex] = updatedTask;
+    
+    const updatedData = {
+      ...roadmapData,
+      [product]: {
+        ...roadmapData[product],
+        [quarter]: updatedQuarter
+      }
+    };
+    
+    setRoadmapData(updatedData);
+    addActivityLog('Edited task', `"${oldText}" → "${editTaskText.trim()}"`);
+    setEditingTask({ product: null, quarter: null, index: null });
+    setEditTaskText('');
+    saveRoadmapData(updatedData, activityLog);
+  };
+
+  const cancelEditTask = () => {
+    setEditingTask({ product: null, quarter: null, index: null });
+    setEditTaskText('');
+  };
+
+  const calculateProgress = () => {
+    let total = 0;
+    let completed = 0;
+    
+    Object.values(roadmapData).forEach(product => {
+      Object.values(product).forEach(tasks => {
+        tasks.forEach(task => {
+          total++;
+          if (task.completed) completed++;
+        });
+      });
+    });
+    
+    return total === 0 ? 0 : Math.round((completed / total) * 100);
+  };
+
+  const calculateProductProgress = (product) => {
+    let total = 0;
+    let completed = 0;
+    
+    Object.values(roadmapData[product]).forEach(tasks => {
+      tasks.forEach(task => {
+        total++;
+        if (task.completed) completed++;
+      });
+    });
+    
+    return total === 0 ? 0 : Math.round((completed / total) * 100);
+  };
+
   const getQuarterColor = (quarter) => {
     const colors = {
       Q1: 'task-q1',
@@ -195,7 +308,6 @@ function App() {
     return colors[quarter];
   };
 
-  // Loading screen
   if (loading) {
     return (
       <div className="loading">
@@ -205,7 +317,6 @@ function App() {
     );
   }
 
-  // Login screen
   if (!user) {
     return (
       <div className="login-page">
@@ -249,16 +360,21 @@ function App() {
 
   if (!roadmapData) return <div className="loading"><div className="spinner"></div></div>;
 
-  // Calculate stats
   const totalTasks = Object.values(roadmapData).reduce((acc, product) => 
     acc + Object.values(product).reduce((sum, tasks) => sum + tasks.length, 0), 0
   );
 
-  // Main app
+  const completedTasks = Object.values(roadmapData).reduce((acc, product) => 
+    acc + Object.values(product).reduce((sum, tasks) => 
+      sum + tasks.filter(t => t.completed).length, 0
+    ), 0
+  );
+
+  const progress = calculateProgress();
+
   return (
     <div className="app">
       <div className="container">
-        {/* Header */}
         <div className="header">
           <div className="header-content">
             <div>
@@ -276,17 +392,34 @@ function App() {
             </div>
           </div>
           
-          {/* Stats */}
           <div className="stats">
-            <div className="stat blue"><span>Tasks</span><strong>{totalTasks}</strong></div>
-            <div className="stat purple"><span>Products</span><strong>5</strong></div>
-            <div className="stat orange"><span>Team</span><strong>4</strong></div>
-            <div className="stat green"><span>Progress</span><strong>60%</strong></div>
+            <div className="stat blue">
+              <span>Total Tasks</span>
+              <strong>{totalTasks}</strong>
+            </div>
+            <div className="stat green">
+              <span>Completed</span>
+              <strong>{completedTasks}</strong>
+            </div>
+            <div className="stat orange">
+              <span>In Progress</span>
+              <strong>{totalTasks - completedTasks}</strong>
+            </div>
+            <div className="stat purple">
+              <span>Progress</span>
+              <strong>{progress}%</strong>
+            </div>
+          </div>
+
+          <div className="progress-bar-container">
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+            </div>
+            <span className="progress-text">{completedTasks} of {totalTasks} tasks completed</span>
           </div>
         </div>
 
         <div className="main-grid">
-          {/* Roadmap */}
           <div className="roadmap-section">
             <div className="card">
               <div className="card-header">
@@ -315,20 +448,85 @@ function App() {
                   <tbody>
                     {Object.entries(roadmapData).map(([product, quarters]) => (
                       <tr key={product}>
-                        <td className="td-product">{product}</td>
+                        <td className="td-product">
+                          <div className="product-header">
+                            <span>{product}</span>
+                            <div className="product-progress">
+                              <div className="mini-progress">
+                                <div 
+                                  className="mini-progress-fill" 
+                                  style={{ width: `${calculateProductProgress(product)}%` }}
+                                ></div>
+                              </div>
+                              <span className="progress-percent">{calculateProductProgress(product)}%</span>
+                            </div>
+                          </div>
+                        </td>
                         {['Q1', 'Q2', 'Q3', 'Q4'].map((quarter) => (
                           <td key={quarter}>
                             <div className="task-list">
                               {quarters[quarter]?.map((task, idx) => (
-                                <div key={idx} className={`task ${getQuarterColor(quarter)}`}>
-                                  <span>{task}</span>
-                                  {editMode && userRole === 'team' && (
-                                    <button
-                                      onClick={() => deleteTask(product, quarter, idx)}
-                                      className="btn-delete-task"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
+                                <div key={idx}>
+                                  {editingTask.product === product && 
+                                   editingTask.quarter === quarter && 
+                                   editingTask.index === idx ? (
+                                    <div className="edit-task-form">
+                                      <input
+                                        type="text"
+                                        value={editTaskText}
+                                        onChange={(e) => setEditTaskText(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && saveEditTask(product, quarter, idx)}
+                                        autoFocus
+                                      />
+                                      <button
+                                        onClick={() => saveEditTask(product, quarter, idx)}
+                                        className="btn-icon green"
+                                      >
+                                        <CheckCircle size={16} />
+                                      </button>
+                                      <button
+                                        onClick={cancelEditTask}
+                                        className="btn-icon red"
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className={`task ${getQuarterColor(quarter)} ${task.completed ? 'completed' : ''}`}>
+                                      <div className="task-content">
+                                        <button
+                                          onClick={() => toggleTaskComplete(product, quarter, idx)}
+                                          className="checkbox-btn"
+                                          disabled={userRole === 'teacher'}
+                                        >
+                                          {task.completed ? 
+                                            <CheckCheck size={16} className="check-icon" /> : 
+                                            <Circle size={16} className="circle-icon" />
+                                          }
+                                        </button>
+                                        <span className={task.completed ? 'completed-text' : ''}>
+                                          {task.text}
+                                        </span>
+                                      </div>
+                                      {editMode && userRole === 'team' && (
+                                        <div className="task-actions">
+                                          <button
+                                            onClick={() => startEditTask(product, quarter, idx)}
+                                            className="btn-icon-small blue"
+                                            title="Edit"
+                                          >
+                                            <Edit size={14} />
+                                          </button>
+                                          <button
+                                            onClick={() => deleteTask(product, quarter, idx)}
+                                            className="btn-icon-small red"
+                                            title="Delete"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                               ))}
@@ -344,7 +542,10 @@ function App() {
                                       placeholder="Task name..."
                                       autoFocus
                                     />
-                                    <button onClick={() => addTask(product, quarter)} className="btn-icon green">
+                                    <button
+                                      onClick={() => addTask(product, quarter)}
+                                      className="btn-icon green"
+                                    >
                                       <CheckCircle size={16} />
                                     </button>
                                     <button
@@ -374,7 +575,6 @@ function App() {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="sidebar">
             <div className="card">
               <h3><Users size={20} /> Activity Log</h3>
