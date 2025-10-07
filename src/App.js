@@ -84,7 +84,7 @@ function App() {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+ }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load roadmap from Firebase
   const loadRoadmapData = async () => {
