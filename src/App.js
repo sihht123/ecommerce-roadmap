@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
-import { 
+/*import { 
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged 
@@ -13,5 +13,5 @@ import {
 import { 
   Lock, Unlock, Users, Eye, Edit2, Plus, 
   Trash2, Save, X, CheckCircle, LogOut 
-} from 'lucide-react';
+} from 'lucide-react';*/
 import './App.css';
