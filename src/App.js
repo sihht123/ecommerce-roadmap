@@ -84,7 +84,7 @@ function App() {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [loadRoadmapData, userRoles]);
 
   // Load roadmap from Firebase
   const loadRoadmapData = async () => {
