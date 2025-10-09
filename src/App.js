@@ -88,7 +88,7 @@ const RoadmapManager = () => {
   ]);
 
   // Current user role - change this to 'teacher' to see read-only mode
-  const [teacher, setCurrentUserRole] = useState('team'); // 'team' or 'teacher'
+  //const [teacher, setCurrentUserRole] = useState('team'); // 'team' or 'teacher'
 
   const [selectedTask, setSelectedTask] = useState(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
