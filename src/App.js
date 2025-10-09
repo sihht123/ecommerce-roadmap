@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
+import {
+  Lock, Unlock, Users, Eye, Edit2, Plus,
+  Trash2, Save, X, CheckCircle, LogOut
+} from 'lucide-react';
+
 import { auth, db } from './firebase';
 import { 
   signInWithEmailAndPassword, 
