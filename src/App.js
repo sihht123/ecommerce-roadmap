@@ -1,608 +1,412 @@
-import React, { useState, useEffect } from 'react';
-import { auth, db } from './firebase';
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged 
-} from 'firebase/auth';
-import { 
-  doc, 
-  getDoc, 
-  setDoc 
-} from 'firebase/firestore';
-import { 
-  Lock, Unlock, Users, Eye, Edit2, Plus, 
-  Trash2, Save, X, CheckCircle, LogOut, Circle,
-  Edit, CheckCheck
-} from 'lucide-react';
-import './App.css';
+import React, { useState } from 'react';
+import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
-  const [showAddTask, setShowAddTask] = useState({ product: null, quarter: null });
-  const [editingTask, setEditingTask] = useState({ product: null, quarter: null, index: null });
-  const [newTaskText, setNewTaskText] = useState('');
-  const [editTaskText, setEditTaskText] = useState('');
-  const [roadmapData, setRoadmapData] = useState(null);
-  const [activityLog, setActivityLog] = useState([]);
-
-  const userRoles = {
-    'teacher@school.com': 'teacher',
-    'adib@school.com': 'team',
-    'student1@school.com': 'team',
-    'student2@school.com': 'team'
-  };
-
-  const initialRoadmapData = {
-    'Web Application': {
-      Q1: [
-        { text: 'Research & Design', completed: true },
-        { text: 'Azure Architecture', completed: true },
-        { text: 'UI/UX Design', completed: false }
-      ],
-      Q2: [
-        { text: 'Frontend Development', completed: false },
-        { text: 'Backend API', completed: false },
-        { text: 'Database Setup', completed: false }
-      ],
-      Q3: [
-        { text: 'Payment Integration', completed: false },
-        { text: 'Security Implementation', completed: false }
-      ],
-      Q4: [
-        { text: 'Performance Optimization', completed: false },
-        { text: 'Load Testing', completed: false }
-      ]
+const RoadmapManager = () => {
+  const [products, setProducts] = useState([
+    {
+      id: 1,
+      name: 'Admin Dashboard',
+      tasks: {
+        Q1: [{ id: 1, status: 'planned', description: 'Setup basic admin interface' }],
+        Q2: [
+          { id: 2, status: 'planned', description: 'Add user management' },
+          { id: 3, status: 'planned', description: 'Implement analytics dashboard' }
+        ],
+        Q3: [{ id: 4, status: 'planned', description: 'Advanced reporting features' }],
+        Q4: [{ id: 5, status: 'planned', description: 'Performance optimization' }]
+      }
     },
-    'Mobile App': {
-      Q1: [{ text: 'Market Research', completed: true }],
-      Q2: [
-        { text: 'iOS Development MVP', completed: false },
-        { text: 'Android Development MVP', completed: false }
-      ],
-      Q3: [
-        { text: 'Feature Parity', completed: false },
-        { text: 'Push Notifications', completed: false }
-      ],
-      Q4: [{ text: 'App Store Release', completed: false }]
+    {
+      id: 2,
+      name: 'Payment System',
+      tasks: {
+        Q1: [],
+        Q2: [],
+        Q3: [
+          { id: 6, status: 'planned', description: 'Integrate payment gateway' },
+          { id: 7, status: 'planned', description: 'Setup recurring billing' }
+        ],
+        Q4: [{ id: 8, status: 'planned', description: 'Add multiple payment methods' }]
+      }
     },
-    'Admin Dashboard': {
-      Q1: [{ text: 'Prototype', completed: true }],
-      Q2: [
-        { text: 'User Management', completed: false },
-        { text: 'Product Management', completed: false }
-      ],
-      Q3: [
-        { text: 'Analytics Dashboard', completed: false },
-        { text: 'Reporting System', completed: false }
-      ],
-      Q4: [{ text: 'Advanced Analytics', completed: false }]
+    {
+      id: 3,
+      name: 'Web Application',
+      tasks: {
+        Q1: [
+          { id: 9, status: 'planned', description: 'Design UI/UX' },
+          { id: 10, status: 'planned', description: 'Setup React frontend' },
+          { id: 11, status: 'planned', description: 'Implement authentication' }
+        ],
+        Q2: [{ id: 12, status: 'planned', description: 'Build product catalog' }],
+        Q3: [{ id: 13, status: 'planned', description: 'Shopping cart functionality' }],
+        Q4: [{ id: 14, status: 'planned', description: 'Checkout process' }]
+      }
     },
-    'Order Management': {
-      Q1: [],
-      Q2: [{ text: 'Core System Design', completed: false }],
-      Q3: [
-        { text: 'Workflow Automation', completed: false },
-        { text: 'Inventory Integration', completed: false }
-      ],
-      Q4: [{ text: 'AI-Powered Forecasting', completed: false }]
+    {
+      id: 4,
+      name: 'Mobile App',
+      tasks: {
+        Q1: [{ id: 15, status: 'planned', description: 'Mobile app architecture' }],
+        Q2: [
+          { id: 16, status: 'planned', description: 'Develop iOS app' },
+          { id: 17, status: 'planned', description: 'Develop Android app' }
+        ],
+        Q3: [
+          { id: 18, status: 'planned', description: 'Push notifications' },
+          { id: 19, status: 'planned', description: 'Offline mode' }
+        ],
+        Q4: [{ id: 20, status: 'planned', description: 'App store deployment' }]
+      }
     },
-    'Payment System': {
-      Q1: [],
-      Q2: [],
-      Q3: [
-        { text: 'Payment Gateway', completed: false },
-        { text: 'Multi-Currency', completed: false }
-      ],
-      Q4: [
-        { text: 'Fraud Detection', completed: false },
-        { text: 'Recurring Billing', completed: false }
-      ]
+    {
+      id: 5,
+      name: 'Order Management',
+      tasks: {
+        Q1: [],
+        Q2: [{ id: 21, status: 'planned', description: 'Order tracking system' }],
+        Q3: [
+          { id: 22, status: 'planned', description: 'Inventory management' },
+          { id: 23, status: 'planned', description: 'Shipping integration' }
+        ],
+        Q4: [{ id: 24, status: 'planned', description: 'Returns processing' }]
+      }
     }
-  };
+  ]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        setUserRole(userRoles[currentUser.email] || 'viewer');
-        loadRoadmapData();
-      } else {
-        setUserRole(null);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [activities] = useState([
+    { user: 'siham.htit', action: 'Completed task', detail: '"undefined" in Payment System Q3', time: 'Just now' },
+    { user: 'adib.salama', action: 'Completed task', detail: '"undefined" in Order Management Q2', time: 'Just now' },
+    { user: 'siham.htit', action: 'Reopened task', detail: '"undefined" in Order Management Q2', time: 'Just now' }
+  ]);
 
-  const loadRoadmapData = async () => {
-    try {
-      const docRef = doc(db, 'roadmaps', 'main');
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        setRoadmapData(docSnap.data().data);
-        setActivityLog(docSnap.data().activityLog || []);
-      } else {
-        await setDoc(docRef, {
-          data: initialRoadmapData,
-          activityLog: []
-        });
-        setRoadmapData(initialRoadmapData);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setRoadmapData(initialRoadmapData);
-    }
-  };
+  const [members] = useState([
+    { name: 'teacher', role: 'Teacher (View Only)', avatar: 'T', color: 'bg-emerald-500' },
+    { name: 'adib', role: 'Team', avatar: 'A', color: 'bg-blue-500' },
+    { name: 'student1', role: 'Team', avatar: 'S', color: 'bg-blue-500' },
+    { name: 'student2', role: 'Team', avatar: 'S', color: 'bg-blue-500' }
+  ]);
 
-  const saveRoadmapData = async (newData, newActivity) => {
-    try {
-      await setDoc(doc(db, 'roadmaps', 'main'), {
-        data: newData,
-        activityLog: newActivity
-      });
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
+  // Current user role - change this to 'teacher' to see read-only mode
+  const [currentUserRole, setCurrentUserRole] = useState('team'); // 'team' or 'teacher'
 
-  const addActivityLog = (action, detail) => {
-    const newLog = {
-      user: user.email.split('@')[0],
-      action,
-      detail,
-      time: 'Just now'
-    };
-    const updatedLog = [newLog, ...activityLog.slice(0, 19)];
-    setActivityLog(updatedLog);
-    saveRoadmapData(roadmapData, updatedLog);
-  };
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [newProductName, setNewProductName] = useState('');
+  const [editingProduct, setEditingProduct] = useState(null);
 
-  const handleLogin = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      alert('Login failed: ' + error.message);
-    }
-  };
+  const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    setEditMode(false);
-  };
-
-  const addTask = (product, quarter) => {
-    if (!newTaskText.trim()) return;
-    
-    const newTask = { text: newTaskText.trim(), completed: false };
-    const updatedData = {
-      ...roadmapData,
-      [product]: {
-        ...roadmapData[product],
-        [quarter]: [...roadmapData[product][quarter], newTask]
-      }
-    };
-    
-    setRoadmapData(updatedData);
-    addActivityLog('Added task', `"${newTaskText}" to ${product} ${quarter}`);
-    setNewTaskText('');
-    setShowAddTask({ product: null, quarter: null });
-    saveRoadmapData(updatedData, activityLog);
-  };
-
-  const deleteTask = (product, quarter, taskIndex) => {
-    const taskName = roadmapData[product][quarter][taskIndex].text;
-    const updatedData = {
-      ...roadmapData,
-      [product]: {
-        ...roadmapData[product],
-        [quarter]: roadmapData[product][quarter].filter((_, idx) => idx !== taskIndex)
-      }
-    };
-    
-    setRoadmapData(updatedData);
-    addActivityLog('Deleted task', `"${taskName}" from ${product} ${quarter}`);
-    saveRoadmapData(updatedData, activityLog);
-  };
-
-  const toggleTaskComplete = (product, quarter, taskIndex) => {
-    const task = roadmapData[product][quarter][taskIndex];
-    const updatedTask = { ...task, completed: !task.completed };
-    
-    const updatedQuarter = [...roadmapData[product][quarter]];
-    updatedQuarter[taskIndex] = updatedTask;
-    
-    const updatedData = {
-      ...roadmapData,
-      [product]: {
-        ...roadmapData[product],
-        [quarter]: updatedQuarter
-      }
-    };
-    
-    setRoadmapData(updatedData);
-    addActivityLog(
-      updatedTask.completed ? 'Completed task' : 'Reopened task',
-      `"${task.text}" in ${product} ${quarter}`
-    );
-    saveRoadmapData(updatedData, activityLog);
-  };
-
-  const startEditTask = (product, quarter, index) => {
-    setEditingTask({ product, quarter, index });
-    setEditTaskText(roadmapData[product][quarter][index].text);
-  };
-
-  const saveEditTask = (product, quarter, taskIndex) => {
-    if (!editTaskText.trim()) return;
-    
-    const oldText = roadmapData[product][quarter][taskIndex].text;
-    const updatedTask = { ...roadmapData[product][quarter][taskIndex], text: editTaskText.trim() };
-    
-    const updatedQuarter = [...roadmapData[product][quarter]];
-    updatedQuarter[taskIndex] = updatedTask;
-    
-    const updatedData = {
-      ...roadmapData,
-      [product]: {
-        ...roadmapData[product],
-        [quarter]: updatedQuarter
-      }
-    };
-    
-    setRoadmapData(updatedData);
-    addActivityLog('Edited task', `"${oldText}" → "${editTaskText.trim()}"`);
-    setEditingTask({ product: null, quarter: null, index: null });
-    setEditTaskText('');
-    saveRoadmapData(updatedData, activityLog);
-  };
-
-  const cancelEditTask = () => {
-    setEditingTask({ product: null, quarter: null, index: null });
-    setEditTaskText('');
-  };
-
-  const calculateProgress = () => {
-    let total = 0;
-    let completed = 0;
-    
-    Object.values(roadmapData).forEach(product => {
-      Object.values(product).forEach(tasks => {
-        tasks.forEach(task => {
-          total++;
-          if (task.completed) completed++;
-        });
-      });
-    });
-    
-    return total === 0 ? 0 : Math.round((completed / total) * 100);
-  };
-
-  const calculateProductProgress = (product) => {
-    let total = 0;
-    let completed = 0;
-    
-    Object.values(roadmapData[product]).forEach(tasks => {
-      tasks.forEach(task => {
-        total++;
-        if (task.completed) completed++;
-      });
-    });
-    
-    return total === 0 ? 0 : Math.round((completed / total) * 100);
-  };
-
-  const getQuarterColor = (quarter) => {
+  const getTaskColor = (status) => {
     const colors = {
-      Q1: 'task-q1',
-      Q2: 'task-q2',
-      Q3: 'task-q3',
-      Q4: 'task-q4'
+      planned: 'bg-blue-500',
+      inProgress: 'bg-purple-500',
+      testing: 'bg-orange-500',
+      completed: 'bg-pink-500'
     };
-    return colors[quarter];
+    return colors[status] || 'bg-gray-500';
   };
 
-  if (loading) {
-    return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Loading...</p>
-      </div>
-    );
-  }
+  const getTotalTasks = () => {
+    let total = 0;
+    products.forEach(product => {
+      quarters.forEach(q => {
+        total += product.tasks[q]?.length || 0;
+      });
+    });
+    return total;
+  };
 
-  if (!user) {
-    return (
-      <div className="login-page">
-        <div className="login-box">
-          <div className="login-header">
-            <div className="lock-icon"><Lock size={40} /></div>
-            <h1>Project Roadmap</h1>
-            <p>Azure E-Commerce Platform</p>
-          </div>
-          
-          <div className="login-form">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className="input"
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-              placeholder="Password"
-              className="input"
-            />
-            <button onClick={handleLogin} className="btn-primary">
-              <Unlock size={20} /> Login
-            </button>
-          </div>
-          
-          <div className="demo-box">
-            <p><strong>Demo Accounts:</strong></p>
-            <p>Teacher: teacher@school.com / teacher123</p>
-            <p>Team: adib@school.com / team123</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const getCompletedTasks = () => {
+    let completed = 0;
+    products.forEach(product => {
+      quarters.forEach(q => {
+        completed += product.tasks[q]?.filter(t => t.status === 'completed').length || 0;
+      });
+    });
+    return completed;
+  };
 
-  if (!roadmapData) return <div className="loading"><div className="spinner"></div></div>;
+  const getInProgressTasks = () => {
+    let inProgress = 0;
+    products.forEach(product => {
+      quarters.forEach(q => {
+        inProgress += product.tasks[q]?.filter(t => t.status === 'inProgress' || t.status === 'testing').length || 0;
+      });
+    });
+    return inProgress;
+  };
 
-  const totalTasks = Object.values(roadmapData).reduce((acc, product) => 
-    acc + Object.values(product).reduce((sum, tasks) => sum + tasks.length, 0), 0
-  );
+  const addProduct = () => {
+    if (newProductName.trim()) {
+      const newProduct = {
+        id: Date.now(),
+        name: newProductName,
+        tasks: { Q1: [], Q2: [], Q3: [], Q4: [] }
+      };
+      setProducts([...products, newProduct]);
+      setNewProductName('');
+      setIsAddingProduct(false);
+    }
+  };
 
-  const completedTasks = Object.values(roadmapData).reduce((acc, product) => 
-    acc + Object.values(product).reduce((sum, tasks) => 
-      sum + tasks.filter(t => t.completed).length, 0
-    ), 0
-  );
+  const deleteProduct = (productId) => {
+    setProducts(products.filter(p => p.id !== productId));
+  };
 
-  const progress = calculateProgress();
+  const updateProductName = (productId, newName) => {
+    setProducts(products.map(p => 
+      p.id === productId ? { ...p, name: newName } : p
+    ));
+    setEditingProduct(null);
+  };
+
+  const addTask = (productId, quarter) => {
+    const newTask = {
+      id: Date.now(),
+      status: 'planned',
+      description: 'New task - click to edit'
+    };
+    setProducts(products.map(p => {
+      if (p.id === productId) {
+        return {
+          ...p,
+          tasks: {
+            ...p.tasks,
+            [quarter]: [...(p.tasks[quarter] || []), newTask]
+          }
+        };
+      }
+      return p;
+    }));
+  };
+
+  const deleteTask = (productId, quarter, taskId) => {
+    setProducts(products.map(p => {
+      if (p.id === productId) {
+        return {
+          ...p,
+          tasks: {
+            ...p.tasks,
+            [quarter]: p.tasks[quarter].filter(t => t.id !== taskId)
+          }
+        };
+      }
+      return p;
+    }));
+    setSelectedTask(null);
+  };
+
+  const updateTask = (productId, quarter, taskId, updates) => {
+    setProducts(products.map(p => {
+      if (p.id === productId) {
+        return {
+          ...p,
+          tasks: {
+            ...p.tasks,
+            [quarter]: p.tasks[quarter].map(t => 
+              t.id === taskId ? { ...t, ...updates } : t
+            )
+          }
+        };
+      }
+      return p;
+    }));
+  };
+
+  const totalTasks = getTotalTasks();
+  const completedTasks = getCompletedTasks();
+  const inProgressTasks = getInProgressTasks();
+  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="app">
-      <div className="container">
-        <div className="header">
-          <div className="header-content">
-            <div>
-              <h1>Azure E-Commerce Roadmap</h1>
-              <p>Collaborative Project Management</p>
-            </div>
-            <div className="header-actions">
-              <span className={`badge ${userRole === 'teacher' ? 'badge-green' : 'badge-blue'}`}>
-                {userRole === 'teacher' ? <Eye size={16} /> : <Edit2 size={16} />}
-                {userRole === 'teacher' ? 'Teacher' : 'Team Member'}
-              </span>
-              <button onClick={handleLogout} className="btn-logout">
-                <LogOut size={16} /> Logout
-              </button>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+      <div className="p-8">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Azure E-Commerce Roadmap</h1>
+            <p className="text-blue-300">Collaborative Project Management</p>
           </div>
-          
-          <div className="stats">
-            <div className="stat blue">
-              <span>Total Tasks</span>
-              <strong>{totalTasks}</strong>
-            </div>
-            <div className="stat green">
-              <span>Completed</span>
-              <strong>{completedTasks}</strong>
-            </div>
-            <div className="stat orange">
-              <span>In Progress</span>
-              <strong>{totalTasks - completedTasks}</strong>
-            </div>
-            <div className="stat purple">
-              <span>Progress</span>
-              <strong>{progress}%</strong>
-            </div>
-          </div>
-
-          <div className="progress-bar-container">
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width: `${progress}%` }}></div>
-            </div>
-            <span className="progress-text">{completedTasks} of {totalTasks} tasks completed</span>
+          <div className="flex gap-3">
+            <button className="px-6 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg flex items-center gap-2">
+              <Edit2 size={16} />
+              Team Member
+            </button>
+            <button className="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg">
+              Logout
+            </button>
           </div>
         </div>
 
-        <div className="main-grid">
-          <div className="roadmap-section">
-            <div className="card">
-              <div className="card-header">
-                <h2>Project Roadmap</h2>
-                {userRole === 'team' && (
-                  <button
-                    onClick={() => setEditMode(!editMode)}
-                    className={editMode ? 'btn-success' : 'btn-primary'}
-                  >
-                    {editMode ? <><Save size={16} /> Done</> : <><Edit2 size={16} /> Edit</>}
-                  </button>
-                )}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-4 gap-4 mb-8">
+          <div className="bg-slate-800/50 backdrop-blur rounded-xl p-6">
+            <div className="text-sm text-slate-400 mb-2">Total Tasks</div>
+            <div className="text-4xl font-bold">{totalTasks}</div>
+          </div>
+          <div className="bg-emerald-900/30 backdrop-blur rounded-xl p-6">
+            <div className="text-sm text-emerald-400 mb-2">Completed</div>
+            <div className="text-4xl font-bold">{completedTasks}</div>
+          </div>
+          <div className="bg-orange-900/30 backdrop-blur rounded-xl p-6">
+            <div className="text-sm text-orange-400 mb-2">In Progress</div>
+            <div className="text-4xl font-bold">{inProgressTasks}</div>
+          </div>
+          <div className="bg-purple-900/30 backdrop-blur rounded-xl p-6">
+            <div className="text-sm text-purple-400 mb-2">Progress</div>
+            <div className="text-4xl font-bold">{progress}%</div>
+          </div>
+        </div>
+
+        <div className="text-sm text-slate-400 mb-8">
+          {completedTasks} of {totalTasks} tasks completed
+        </div>
+
+        <div className="grid grid-cols-3 gap-6">
+          {/* Roadmap Section */}
+          <div className="col-span-2 bg-slate-800/30 backdrop-blur rounded-xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Project Roadmap</h2>
+              <button
+                onClick={() => setIsAddingProduct(true)}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Add Product
+              </button>
+            </div>
+
+            {isAddingProduct && (
+              <div className="mb-4 p-4 bg-slate-700/50 rounded-lg flex gap-2">
+                <input
+                  type="text"
+                  value={newProductName}
+                  onChange={(e) => setNewProductName(e.target.value)}
+                  placeholder="Enter product name"
+                  className="flex-1 px-3 py-2 bg-slate-800 rounded border border-slate-600 focus:border-blue-500 outline-none"
+                  onKeyPress={(e) => e.key === 'Enter' && addProduct()}
+                />
+                <button onClick={addProduct} className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded">
+                  <Check size={16} />
+                </button>
+                <button onClick={() => setIsAddingProduct(false)} className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded">
+                  <X size={16} />
+                </button>
               </div>
-              
-              <div className="table-wrapper">
-                <table className="roadmap-table">
-                  <thead>
-                    <tr>
-                      <th className="th-product">PRODUCT</th>
-                      <th className="th-q1">Q1</th>
-                      <th className="th-q2">Q2</th>
-                      <th className="th-q3">Q3</th>
-                      <th className="th-q4">Q4</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(roadmapData).map(([product, quarters]) => (
-                      <tr key={product}>
-                        <td className="td-product">
-                          <div className="product-header">
-                            <span>{product}</span>
-                            <div className="product-progress">
-                              <div className="mini-progress">
-                                <div 
-                                  className="mini-progress-fill" 
-                                  style={{ width: `${calculateProductProgress(product)}%` }}
-                                ></div>
-                              </div>
-                              <span className="progress-percent">{calculateProductProgress(product)}%</span>
-                            </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className="text-left p-3 font-semibold">PRODUCT</th>
+                    {quarters.map(q => (
+                      <th key={q} className="text-center p-3 font-semibold w-48">{q}</th>
+                    ))}
+                    <th className="w-24"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map(product => (
+                    <tr key={product.id} className="border-b border-slate-700/50">
+                      <td className="p-3">
+                        {editingProduct === product.id ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              defaultValue={product.name}
+                              className="px-2 py-1 bg-slate-800 rounded border border-slate-600 text-sm"
+                              onBlur={(e) => updateProductName(product.id, e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  updateProductName(product.id, e.target.value);
+                                }
+                              }}
+                              autoFocus
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{product.name}</span>
+                            <button
+                              onClick={() => setEditingProduct(product.id)}
+                              className="p-1 hover:bg-slate-700 rounded"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                        <div className="text-xs text-green-400 mt-1">0%</div>
+                      </td>
+                      {quarters.map(quarter => (
+                        <td key={quarter} className="p-3">
+                          <div className="space-y-2">
+                            {product.tasks[quarter]?.map(task => (
+                              <button
+                                key={task.id}
+                                onClick={() => setSelectedTask({ ...task, productId: product.id, quarter })}
+                                className={`w-full h-10 ${getTaskColor(task.status)} rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity`}
+                              >
+                                <div className="w-4 h-4 rounded-full border-2 border-white"></div>
+                              </button>
+                            ))}
+                            <button
+                              onClick={() => addTask(product.id, quarter)}
+                              className="w-full h-8 border-2 border-dashed border-slate-600 hover:border-blue-500 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-500"
+                            >
+                              <Plus size={16} />
+                            </button>
                           </div>
                         </td>
-                        {['Q1', 'Q2', 'Q3', 'Q4'].map((quarter) => (
-                          <td key={quarter}>
-                            <div className="task-list">
-                              {quarters[quarter]?.map((task, idx) => (
-                                <div key={idx}>
-                                  {editingTask.product === product && 
-                                   editingTask.quarter === quarter && 
-                                   editingTask.index === idx ? (
-                                    <div className="edit-task-form">
-                                      <input
-                                        type="text"
-                                        value={editTaskText}
-                                        onChange={(e) => setEditTaskText(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && saveEditTask(product, quarter, idx)}
-                                        autoFocus
-                                      />
-                                      <button
-                                        onClick={() => saveEditTask(product, quarter, idx)}
-                                        className="btn-icon green"
-                                      >
-                                        <CheckCircle size={16} />
-                                      </button>
-                                      <button
-                                        onClick={cancelEditTask}
-                                        className="btn-icon red"
-                                      >
-                                        <X size={16} />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className={`task ${getQuarterColor(quarter)} ${task.completed ? 'completed' : ''}`}>
-                                      <div className="task-content">
-                                        <button
-                                          onClick={() => toggleTaskComplete(product, quarter, idx)}
-                                          className="checkbox-btn"
-                                          disabled={userRole === 'teacher'}
-                                        >
-                                          {task.completed ? 
-                                            <CheckCheck size={16} className="check-icon" /> : 
-                                            <Circle size={16} className="circle-icon" />
-                                          }
-                                        </button>
-                                        <span className={task.completed ? 'completed-text' : ''}>
-                                          {task.text}
-                                        </span>
-                                      </div>
-                                      {editMode && userRole === 'team' && (
-                                        <div className="task-actions">
-                                          <button
-                                            onClick={() => startEditTask(product, quarter, idx)}
-                                            className="btn-icon-small blue"
-                                            title="Edit"
-                                          >
-                                            <Edit size={14} />
-                                          </button>
-                                          <button
-                                            onClick={() => deleteTask(product, quarter, idx)}
-                                            className="btn-icon-small red"
-                                            title="Delete"
-                                          >
-                                            <Trash2 size={14} />
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                              
-                              {editMode && userRole === 'team' && (
-                                showAddTask.product === product && showAddTask.quarter === quarter ? (
-                                  <div className="add-task-form">
-                                    <input
-                                      type="text"
-                                      value={newTaskText}
-                                      onChange={(e) => setNewTaskText(e.target.value)}
-                                      onKeyPress={(e) => e.key === 'Enter' && addTask(product, quarter)}
-                                      placeholder="Task name..."
-                                      autoFocus
-                                    />
-                                    <button
-                                      onClick={() => addTask(product, quarter)}
-                                      className="btn-icon green"
-                                    >
-                                      <CheckCircle size={16} />
-                                    </button>
-                                    <button
-                                      onClick={() => setShowAddTask({ product: null, quarter: null })}
-                                      className="btn-icon red"
-                                    >
-                                      <X size={16} />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => setShowAddTask({ product, quarter })}
-                                    className="btn-add"
-                                  >
-                                    <Plus size={14} /> Add Task
-                                  </button>
-                                )
-                              )}
-                            </div>
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                      <td className="p-3">
+                        <button
+                          onClick={() => deleteProduct(product.id)}
+                          className="p-2 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <div className="sidebar">
-            <div className="card">
-              <h3><Users size={20} /> Activity Log</h3>
-              <div className="activity-list">
-                {activityLog.slice(0, 10).map((log, idx) => (
-                  <div key={idx} className="activity-item">
-                    <div className="activity-header">
-                      <strong>{log.user}</strong>
-                      <span>{log.time}</span>
-                    </div>
-                    <p>{log.action}</p>
-                    {log.detail && <small>{log.detail}</small>}
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            {/* Activity Log */}
+            <div className="bg-slate-800/30 backdrop-blur rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                Activity Log
+              </h3>
+              <div className="space-y-4">
+                {activities.map((activity, idx) => (
+                  <div key={idx} className="border-l-2 border-slate-700 pl-4">
+                    <div className="text-sm font-medium text-blue-400">{activity.user}</div>
+                    <div className="text-sm">{activity.action}</div>
+                    <div className="text-xs text-slate-500">{activity.detail}</div>
+                    <div className="text-xs text-slate-600 mt-1">{activity.time}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="card">
-              <h3>Team Members</h3>
-              <div className="team-list">
-                {Object.entries(userRoles).map(([email, role]) => (
-                  <div key={email} className="team-member">
-                    <div className={`avatar ${role === 'teacher' ? 'green' : 'blue'}`}>
-                      {email[0].toUpperCase()}
+            {/* Team Members */}
+            <div className="bg-slate-800/30 backdrop-blur rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4">Team Members</h3>
+              <div className="space-y-3">
+                {members.map((member, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div className={`w-10 h-10 ${member.color} rounded-full flex items-center justify-center font-bold`}>
+                      {member.avatar}
                     </div>
                     <div>
-                      <p><strong>{email.split('@')[0]}</strong></p>
-                      <small>{role}</small>
+                      <div className="font-medium">{member.name}</div>
+                      <div className="text-xs text-slate-400">{member.role}</div>
                     </div>
                   </div>
                 ))}
@@ -611,8 +415,70 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Task Detail Modal */}
+      {selectedTask && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-xl p-6 max-w-md w-full">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-bold">Task Details</h3>
+              <button onClick={() => setSelectedTask(null)} className="text-slate-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-400 block mb-2">Description</label>
+                <textarea
+                  value={selectedTask.description}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 rounded border border-slate-600 focus:border-blue-500 outline-none min-h-24"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-400 block mb-2">Status</label>
+                <select
+                  value={selectedTask.status}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, status: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-900 rounded border border-slate-600 focus:border-blue-500 outline-none"
+                >
+                  <option value="planned">Planned</option>
+                  <option value="inProgress">In Progress</option>
+                  <option value="testing">Testing</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    updateTask(selectedTask.productId, selectedTask.quarter, selectedTask.id, {
+                      description: selectedTask.description,
+                      status: selectedTask.status
+                    });
+                    setSelectedTask(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => {
+                    deleteTask(selectedTask.productId, selectedTask.quarter, selectedTask.id);
+                  }}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg"
+                >
+                  Delete Task
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
-export default App;
+export default RoadmapManager;
