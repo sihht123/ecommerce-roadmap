@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
+import './App.css';
+
 
 const RoadmapManager = () => {
   const [products, setProducts] = useState([
