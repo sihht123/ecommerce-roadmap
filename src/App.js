@@ -14,4 +14,12 @@ import {
   Lock, Unlock, Users, Eye, Edit2, Plus, 
   Trash2, Save, X, CheckCircle, LogOut 
 } from 'lucide-react';*/
+
+import React from 'react';
 import './App.css';
+
+const App = () => {
+  return <div>Hello, App is working!</div>;
+};
+
+export default App;
