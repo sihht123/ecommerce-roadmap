@@ -1,7 +1,175 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
+import { auth, db } from './firebase';
+import { 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged 
+} from 'firebase/auth';
+import { 
+  doc, 
+  getDoc, 
+  setDoc 
+} from 'firebase/firestore';
+import { 
+  Lock, Unlock, Users, Eye, Edit2, Plus, 
+  Trash2, Save, X, CheckCircle, LogOut 
+} from 'lucide-react';
 import './App.css';
 
+function App() {
+  // State management
+  const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [showAddTask, setShowAddTask] = useState({ product: null, quarter: null });
+  const [newTaskText, setNewTaskText] = useState('');
+  const [roadmapData, setRoadmapData] = useState(null);
+  const [activityLog, setActivityLog] = useState([]);
+}
+  // User roles - Add your team member emails here!
+  const userRoles = {
+    'adib.salama@hightach.edu': 'teacher',
+    'Siham.htit@hightech.edu': 'team',
+    'hicham.alaoui@hightech.edu': 'team',
+    'yacir.benmeziyane@hightech.edu': 'team'
+  };
+const saveRoadmapData = async (newData, newActivity) => {
+    try {
+      await setDoc(doc(db, 'roadmaps', 'main'), {
+        data: newData,
+        activityLog: newActivity
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to save. Please try again.');
+    }
+  };
+  const addActivityLog = (action, detail) => {
+    const newLog = {
+      user: user.email.split('@')[0],
+      action,
+      detail,
+      time: 'Just now'
+    };
+    const updatedLog = [newLog, ...activityLog.slice(0, 19)];
+    setActivityLog(updatedLog);
+    saveRoadmapData(roadmapData, updatedLog);
+  };
+  const handleLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      alert('Login failed: ' + error.message);
+    }
+  };
+
+  // Logout handler
+  const handleLogout = async () => {
+    await signOut(auth);
+    setEditMode(false);
+  };
+  const getQuarterColor = (quarter) => {
+    const colors = {
+      Q1: 'task-q1',
+      Q2: 'task-q2',
+      Q3: 'task-q3',
+      Q4: 'task-q4'
+    };
+    return colors[quarter];
+  };
+ if (!user) {
+    return (
+      <div className="login-page">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="lock-icon"><Lock size={40} /></div>
+            <h1>Project Roadmap</h1>
+            <p>Azure E-Commerce Platform</p>
+          </div>
+          
+          <div className="login-form">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="input"
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+              placeholder="Password"
+              className="input"
+            />
+            <button onClick={handleLogin} className="btn-primary">
+              <Unlock size={20} /> Login
+            </button>
+          </div>
+          
+          <div className="demo-box">
+            <p><strong>Demo Accounts:</strong></p>
+            <p>Teacher: teacher@school.com / teacher123</p>
+            <p>Team: adib@school.com / team123</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!roadmapData) return <div className="loading"><div className="spinner"></div></div>;
+
+  // Calculate stats
+  const totalTasks = Object.values(roadmapData).reduce((acc, product) => 
+    acc + Object.values(product).reduce((sum, tasks) => sum + tasks.length, 0), 0
+  );
+  // Loading screen
+  if (loading) {
+    return (
+      <div className="loading">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        setUserRole(userRoles[currentUser.email] || 'viewer');
+        loadRoadmapData();
+      } else {
+        setUserRole(null);
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+  const loadRoadmapData = async () => {
+    try {
+      const docRef = doc(db, 'roadmaps', 'main');
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        setRoadmapData(docSnap.data().data);
+        setActivityLog(docSnap.data().activityLog || []);
+      } else {
+        await setDoc(docRef, {
+          data: initialRoadmapData,
+          activityLog: []
+        });
+        setRoadmapData(initialRoadmapData);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setRoadmapData(initialRoadmapData);
+    }
+  };
 
 const RoadmapManager = () => {
   const [products, setProducts] = useState([
